@@ -7,6 +7,7 @@ use ngx::ffi::{
 };
 use ngx::http::{HttpModule, HttpModuleLocationConf};
 use ngx::{core, http};
+use ngx::core::NgxString;
 use ngx::{http_request_handler, http_variable_get, ngx_modules, ngx_string};
 use std::os::raw::{c_char, c_void};
 
@@ -160,7 +161,25 @@ Reading: {rd} Writing: {wr} Waiting: {wt}
 
 http_variable_get!(
     ngx_http_stub_status_variable,
-    |_: &mut http::Request, _: *mut ngx_variable_value_t, _: usize| { core::Status::NGX_OK }
+    |req: &mut http::Request, v: *mut ngx_variable_value_t, data: usize| {
+        use std::fmt::Write;
+
+        let mut str = NgxString::new_in(req.pool());
+        let _ = match data {
+            0 => write!(str, "{ac}", ac = unsafe { *ngx_stat_active }),
+            1 => write!(str, "{rd}", rd = unsafe { *ngx_stat_reading }),
+            2 => write!(str, "{wr}", wr = unsafe { *ngx_stat_writing }),
+            3 => write!(str, "{wt}", wt = unsafe { *ngx_stat_waiting }),
+            _ => write!(str, "0"),
+        };
+        let (data, len, _, _) = str.into_raw_parts();
+        (*v).set_valid(1);
+        (*v).set_no_cacheable(0);
+        (*v).set_not_found(0);
+        (*v).set_len(len as _);
+        (*v).data = data;
+        core::Status::NGX_OK
+    }
 );
 
 impl http::HttpModule for Module {
