@@ -1,0 +1,30 @@
+# https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+
+version: 2
+updates:
+
+  # Cargo.lock is committed, so Dependabot can track the ngx git dependency and
+  # bump the commit it is locked to.
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    allow:
+      - dependency-type: "all"
+    groups:
+      all-dependencies:
+        patterns:
+          - "*"
+
+  # Nothing to update until a workflow exists, but this is here so it starts
+  # working the moment one is added.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      actions:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "ci"
